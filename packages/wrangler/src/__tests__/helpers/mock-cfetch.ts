@@ -1,8 +1,10 @@
+import { Readable } from "node:stream";
 import { URL, URLSearchParams } from "node:url";
 import { pathToRegexp } from "path-to-regexp";
+import { Response } from "undici";
 import { getCloudflareApiBaseUrl } from "../../cfetch";
 import type { FetchResult, FetchError } from "../../cfetch";
-import type { RequestInit } from "undici";
+import type { RequestInit, BodyInit, HeadersInit } from "undici";
 
 /**
  * The signature of the function that will handle a mock request.
@@ -180,6 +182,7 @@ export function unsetAllMocks() {
  */
 
 const kvGetMocks = new Map<string, string | Buffer>();
+const r2GetMocks = new Map<string, string | undefined>();
 
 /**
  * @mocked typeof fetchKVGetValue
@@ -206,6 +209,48 @@ export function setMockFetchKVGetValue(
 	kvGetMocks.set(`${accountId}/${namespaceId}/${key}`, value);
 }
 
+/**
+ * @mocked typeof fetchR2Objects
+ */
+export async function mockFetchR2Objects(
+	resource: string,
+	bodyInit: {
+		body: BodyInit | Readable;
+		headers: HeadersInit | undefined;
+		method: "PUT" | "GET";
+	}
+): Promise<Response> {
+	if (bodyInit.body instanceof Readable) {
+		bodyInit.body.destroy();
+		bodyInit.body.removeAllListeners();
+	}
+
+	if (r2GetMocks.has(resource)) {
+		const value = r2GetMocks.get(resource);
+
+		return new Response(value);
+	}
+	throw new Error(`no expected mock found for \`r2 object get\` - ${resource}`);
+}
+
+/**
+ * Mock setter for usage within test blocks, companion helper to `mockFetchR2Objects`
+ */
+export function setMockFetchR2Objects(
+	{
+		accountId = "r2-object-test-account",
+		bucketName = "r2-test-bucket",
+		objectName = "r2-test-object",
+	},
+	value?: string
+) {
+	r2GetMocks.set(
+		`/accounts/${accountId}/r2/buckets/${bucketName}/objects/${objectName}`,
+		value
+	);
+}
+
 export function unsetMockFetchKVGetValues() {
 	kvGetMocks.clear();
+	r2GetMocks.clear();
 }
