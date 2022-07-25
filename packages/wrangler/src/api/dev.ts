@@ -1,4 +1,4 @@
-import { startDev } from "../dev";
+import { startApiDev } from "../dev";
 import { logger } from "../logger";
 
 import type { EnablePagesAssetsServiceBindingOptions } from "../miniflare-cli";
@@ -63,8 +63,8 @@ export async function unstable_dev(
 		waitUntilExit: () => Promise<void>;
 	}>((resolve) => {
 		//lmao
-		return new Promise<Awaited<ReturnType<typeof startDev>>>((ready) => {
-			const devServer = startDev({
+		return new Promise<Awaited<ReturnType<typeof startApiDev>>>((ready) => {
+			const devServer = startApiDev({
 				script: script,
 				inspect: false,
 				logLevel: "none",
